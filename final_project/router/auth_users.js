@@ -83,7 +83,6 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
   }
 
   if (!book.reviews) book.reviews = {};
-  // Add or overwrite the user’s review for this ISBN
   const isUpdate = Object.prototype.hasOwnProperty.call(book.reviews, username);
   book.reviews[username] = reviewText;
 
