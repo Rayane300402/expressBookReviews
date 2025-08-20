@@ -35,20 +35,7 @@ public_users.get("/", (req, res) => {
     .send(JSON.stringify(books, null, 4));
 });
 
-public_users.get("/async/books", async (req, res) => {
-  try {
-    const { data } = await axios.get(`${BASE_URL}/`);
 
-    res
-      .status(200)
-      .set("Content-Type", "application/json")
-      .send(typeof data === "string" ? data : JSON.stringify(data, null, 4));
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to fetch books", error: err.message });
-  }
-});
 
 // Get book details based on ISBN
 public_users.get("/isbn/:isbn", function (req, res) {
