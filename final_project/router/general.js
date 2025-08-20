@@ -1,25 +1,19 @@
 const express = require("express");
 let books = require("./booksdb.js");
-const {
-  use,
-} = require("../../../nodejs_PracticeProject_AuthUserMgmt/router/friends.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
-
-
 public_users.post("/register", (req, res) => {
-
-  console.log(req)
+  console.log(req);
 
   const username = req.body.username;
   const password = req.body.password;
 
   if (username && password) {
-      console.log('here 4');
+    console.log("here 4");
     if (!isValid(username)) {
-      console.log('here');
+      console.log("here");
       users.push({ username: username, password: password });
       return res
         .status(200)
@@ -37,8 +31,23 @@ public_users.get("/", (req, res) => {
   console.log("GET / hit (public router)");
   res
     .status(200)
-    .set("Content-Type", "application/json") 
-    .send(JSON.stringify(books, null, 4)); 
+    .set("Content-Type", "application/json")
+    .send(JSON.stringify(books, null, 4));
+});
+
+public_users.get("/async/books", async (req, res) => {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/`);
+
+    res
+      .status(200)
+      .set("Content-Type", "application/json")
+      .send(typeof data === "string" ? data : JSON.stringify(data, null, 4));
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch books", error: err.message });
+  }
 });
 
 // Get book details based on ISBN
@@ -82,6 +91,65 @@ public_users.get("/review/:isbn", function (req, res) {
     .status(200)
     .set("Content-Type", "application/json")
     .send(JSON.stringify(books[parseInt(bookISBN)].reviews || {}, null, 4));
+});
+
+const getAllBooks = () => new Promise((resolve) => resolve(books));
+
+const getBookByISBN = (isbn) =>
+  new Promise((resolve, reject) => {
+    const book = books[isbn];
+    return book ? resolve(book) : reject(new Error("Book not found"));
+  });
+
+const getFirstBookByAuthor = (author) =>
+  new Promise((resolve, reject) => {
+    const q = (author || "").toLowerCase().trim();
+    const found = Object.values(books).find(
+      (b) => (b.author || "").toLowerCase() === q
+    );
+    return found
+      ? resolve(found)
+      : reject(new Error("No book found for this author"));
+  });
+
+const getFirstBookByTitle = (title) =>
+  new Promise((resolve, reject) => {
+    const q = (title || "").toLowerCase().trim();
+    const found = Object.values(books).find(
+      (b) => (b.title || "").toLowerCase() === q
+    );
+    return found
+      ? resolve(found)
+      : reject(new Error("No book found for this title"));
+  });
+
+public_users.get("/promise/books", (req, res) => {
+  getAllBooks()
+    .then((data) => {
+      res
+        .status(200)
+        .set("Content-Type", "application/json")
+        .send(JSON.stringify(data, null, 4)); // pretty output per assignment
+    })
+    .catch((err) => res.status(500).json({ message: err.message }));
+});
+
+public_users.get("/promise/isbn/:isbn", (req, res) => {
+  getBookByISBN(req.params.isbn)
+    .then((book) => res.status(200).json(book))
+    .catch((err) => res.status(404).json({ message: err.message }));
+});
+
+public_users.get("/promise/author/:author", (req, res) => {
+  getFirstBookByAuthor(req.params.author)
+    .then((book) => res.status(200).json(book))
+    .catch((err) => res.status(404).json({ message: err.message }));
+});
+
+public_users.get("/promise/title/:title", (req, res) => {
+  getFirstBookByTitle(req.params.title)
+    .then((book) => res.status(200).json(book))
+    .catch((err) => res.status(404).json({ message: err.message }));
 });
 
 module.exports.general = public_users;
